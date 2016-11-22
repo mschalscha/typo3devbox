@@ -6,57 +6,71 @@ ACHTUNG damit das im folgenden beschriebene funktioniert, muss docker2boot (dock
 
 1. Erstellung einer eigenen Docker-Machine mit der local.typo3.org IP Adresse
 
-
+```bash
 docker-machine create -d virtualbox --virtualbox-hostonly-cidr "192.168.144.1/24" typo3dev
+```
 
-
-# Hier kann der Bezeichner "typo3dev" natürlich nach den eigenen Bedürfnissen angepasst werden.
+Hier kann der Bezeichner "typo3dev" natürlich nach den eigenen Bedürfnissen angepasst werden.
 
 2. Starten der eigenen Docker-Machine
 
-
+```bash
 docker-machine start typo3dev
+```
 
-
-# Eine Übersicht der im System hinterlegten Docker-Machine bekommt man über "docker-machine ls"
+Eine Übersicht der im System hinterlegten Docker-Machine bekommt man über "docker-machine ls"
 
 3. Der docker-machine eine feste IP geben und den dhcp deaktivieren indem wir das bootsync.sh der docker-machine anpassen
 
+```bash
 echo -e $"kill \`more /var/run/udhcpc.eth1.pid\`\nifconfig eth1 192.168.144.120 netmask 255.255.255.0 broadcast 192.168.144.255 up" | docker-machine ssh typo3dev sudo tee /var/lib/boot2docker/bootsync.sh > /dev/null
+```
 
 4. docker-machine durchstarten und Zertifikate erneuern
 
+```bash
 docker-machine stop typo3dev
 docker-machine start typo3dev
+```
 
-# Hier wird es eine Fehlermeldung geben, da die Zertifikate für die docker-machine nun natürlich nicht mehr mit der IP übereinstimmen. Daher erneuern wir diese und starten die docker-machine nochmals durch.
+Hier wird es evtl. eine Fehlermeldung geben, da die Zertifikate für die docker-machine nun natürlich nicht mehr mit der IP übereinstimmen. Falls dem so ist, erneuern wir diese und starten die docker-machine nochmals durch.
 
+```bash
 docker-machine regenerate-certs typo3dev
 docker-machine stop typo3dev
 docker-machine start typo3dev
+```
 
 5. Um nun mit der neuen Docker-machine arbeiten zu können, müssen wir auf diese wechseln.
 
+```bash
 eval "$(docker-machine env typo3dev)"
+```
 
-# Auf die default docker-machine wechselt man natürlich mit: eval "$(docker-machine env default)".
+Auf die default docker-machine wechselt man natürlich mit: eval "$(docker-machine env default)".
 
 6. Nun kann der Container gebaut werden:
 
+```bash
 cd typo3devbox
 docker build -t typo3-test .
+```
 
-# Hier ist typo3-test natürlich beliebig gegen einen eigenen Namen austauschbar
+Hier ist typo3-test natürlich beliebig gegen einen eigenen Namen austauschbar
 
 7. Erstens starten des Containers
 
+```bash
 docker run -p 80:80 -p 3306:3306 typo3test
+```
 
-# Hier sollte nun via http://local.typo3.org, http://php71.local.typo3.org sowie http://php70.local.typo3.org jeweils eine phpinfo() ausgegeben werden
+Hier sollte nun via http://local.typo3.org, http://php71.local.typo3.org sowie http://php70.local.typo3.org jeweils eine phpinfo() ausgegeben werden
 
 8. Einbinden eines lokalen Documentroot
 
+```bash
 docker run -v ~/mein/lokaler/pfad:/srv/www:rw -p 192.168.144.120:80:80 -p 192.168.144.120:3306:3306 typo3-test
+```
 
 9. Zusammenfassung
 Der Container enthält derzeit php7.0, php7.1, nginx, xdebug, composer, nodejs, redis, apc, apcu, memcached
@@ -76,23 +90,29 @@ uvm.
 Nützliches:
 
 In den Docker Container connecten:
+
 1. Docker Container ID herausfinden
 
+```bash
 docker ps
+```
 
 2. In den laufenden Container mit einer bash connecten:
 
+```bash
 docker exec -it "Container ID" bash
+```
 
 Alle Docker Images entfernen:
 
+```bash
 docker rmi --force $(docker images -q)
+```
 
 Wirklich alles entfernen (auch Docker Caches etc)
 
+```bash
 docker ps --filter status=dead --filter status=exited -aq | xargs docker rm -v
 docker images --no-trunc | grep '<none>' | awk '{ print $3 }'     | xargs docker rmi
 docker volume ls -qf dangling=true | xargs docker volume rm
-
-
-
+```
