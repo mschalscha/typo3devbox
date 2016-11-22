@@ -1,0 +1,5 @@
+#!/bin/sh
+if ! [ -d "/var/log/php-fpm7.1" ] ; then
+    mkdir -p /var/log/php-fpm7.1
+fi
+exec svlogd -tt /var/log/php-fpm7.1
